@@ -72,7 +72,8 @@ destination_research_llm = llm = ChatGoogleGenerativeAI(
 )
 
 itinerary_llm = llm = ChatGoogleGenerativeAI(
-    model='gemini-3.5-flash'
+    model='gemini-3.5-flash',
+    temperature=0.5
 )
 
 
@@ -177,16 +178,21 @@ def get_flight_journey_options(state: AgentState) -> AgentState:
         search_params['type'] = '1'
         search_params['return_date'] = state['return_date']
 
-    print('Searching for flight options...')
-    flights = serpapi_client.search(search_params)
+    try:
+        print('Searching for flight options...')
+        flights = serpapi_client.search(search_params)
+        flights_cleaned = extract_flights_data(flights)
 
-    flights_cleaned = extract_flights_data(flights)
+        print('Received flight options:', len(flights_cleaned))
 
-    print('Received flight options:', len(flights_cleaned))
-
-    return {
-        'flights': flights_cleaned
-    }
+        return {
+            'flights': flights_cleaned
+        }
+    except Exception as e:
+        print('Error extracting flight data:', e)
+        return {
+            'flights': []
+        }
 
 
 @traceable(name="get_hotel_options", tags=["find_hotels"], metadata={"description": "Get available hotel options for the specified destination and dates"})
@@ -199,7 +205,7 @@ def get_hotel_options(state: AgentState) -> AgentState:
     search_prams = {
         "documentation_path": "/google-hotels-api",
         "engine": "google_hotels",
-        "q": f"Best affordable hotels and resorts in {state['destination']}",
+        "q": f"Best hotels and resorts in {state['destination']}",
         "hl": "en",
         "check_in_date": state['journey_date'],
         "adults": state['total_members'],
@@ -208,17 +214,23 @@ def get_hotel_options(state: AgentState) -> AgentState:
     return_date = state.get('return_date')
     if return_date:
         search_prams["check_out_date"] = return_date
-    else:
+    else:  # If return date is not provided, set check-out date to one day after check-in date to get relevant hotel options for at least one night stay
         next_date = (datetime.strptime(
             state['journey_date'], '%Y-%m-%d') + timedelta(days=1)).strftime('%Y-%m-%d')
         search_prams["check_out_date"] = next_date
 
-    print('Searching for hotel options...')
-    hotels_raw = serpapi_client.search(search_prams)
-    print('Received hotel options:', len(hotels_raw.get('properties', [])))
-    return {
-        'hotels': extract_hotels_data(hotels_raw)
-    }
+    try:
+        print('Searching for hotel options...')
+        hotels_raw = serpapi_client.search(search_prams)
+        print('Received hotel options:', len(hotels_raw.get('properties', [])))
+        return {
+            'hotels': extract_hotels_data(hotels_raw)
+        }
+    except Exception as e:
+        print('Error extracting hotel data:', e)
+        return {
+            'hotels': []
+        }
 
 
 @traceable(name="get_destination_research", tags=["find_destination_research"], metadata={"description": "Get destination research information from Tavily"})
@@ -290,7 +302,9 @@ def get_flight_trip_details(state: AgentState) -> AgentState:
 @traceable(name="get_hotel_details", tags=["find_hotel_details"], metadata={"description": "Get detailed hotel information from LLM"})
 def get_hotel_details(state: AgentState) -> AgentState:
     if not state['need_hotel_stay']:
-        return state
+        return {
+            'hotel_details': 'HOTEL_SEARCH_RESULT: NOT_NEEDED (USER DOES NOT NEED HOTEL STAY)'
+        }
     print('Getting hotel details from LLM')
 
     result = hotel_stay_chain.invoke({

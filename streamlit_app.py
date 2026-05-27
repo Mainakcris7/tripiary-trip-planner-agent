@@ -55,7 +55,7 @@ if 'processing' not in st.session_state:
 
 # Title
 st.title("✈️ Trip Planner Agent")
-st.markdown("### Plan your perfect trip with AI-powered recommendations!")
+st.markdown("### Plan your perfect trip with AI-powered recommendations 🤖✨!")
 
 st.subheader("🎯 Trip Details")
 
@@ -139,7 +139,7 @@ with col2:
                     <path d="M12 2a10 10 0 0 1 10 10" stroke="white" stroke-width="3"
                           stroke-linecap="round"/>
                 </svg>
-                Planning your trip…
+                Planning your trip... ✨
             </div>
             <style>
                 @keyframes spin { to { transform: rotate(360deg); } }
