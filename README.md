@@ -1,4 +1,4 @@
-# ✈️ Trip Planner Agent
+# ✈️ Tripiary - The Trip Planner Agent
 
 <div align="center">
 
